@@ -23,8 +23,16 @@
     
     <!-- Résultat de la recherche -->
     {% if proteine %}
-        <h2>Résultat :</h2>
-        <p><strong>Nom :</strong> {{ proteine }}</p>
+        <h2>Informations :</h2>
+        <p><strong>Entry :</strong> {{ proteine.Entry }}</p>
+        <p><strong>Entry Name :</strong> {{ proteine.Entry_Name }}</p>
+        <p><strong>Protein names :</strong> {{ proteine.Protein_names }}</p>
+        <p><strong>Gene Names :</strong> {{ proteine.Gene_Names }}</p>
+        <p><strong>Organism :</strong> {{ proteine.Organism }}</p>
+        <p><strong>Sequence :</strong> {{ proteine.Sequence }}</p>
+        <p><strong>EC number :</strong> {{ proteine.EC_number }}</p>
+        <p><strong>InterPro :</strong> {{ proteine.InterPro }}</p>
+    
     {% endif %}
 </body>
 </html>

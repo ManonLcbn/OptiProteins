@@ -1,22 +1,22 @@
 from django.shortcuts import render
-from .requetesmongo import trouver_proteine_par_nom  # Import de la fonction
+from .requetesmongo import trouver_proteine_par_nom
 
 def recherche_prots(request):
-    """
-    Gère la recherche d'une protéine par son nom et l'affichage du formulaire.
-    """
     if request.method == "POST":
-        nom = request.POST.get("nom", "").strip()  # Récupère le nom du formulaire
+        nom = request.POST.get("nom", "").strip()
         if not nom:
             return render(request, "main/main.html", {"erreur": "Veuillez entrer un nom."})
         
-        proteine = trouver_proteine_par_nom(nom)  # Utilisation de la fonction externalisée
-        
-        if proteine:
-            proteine["_id"] = str(proteine["_id"])  # Convertit l'ID MongoDB pour l'affichage
-            return render(request, "main/main.html", {"proteine": proteine})
-        else:
-            return render(request, "main/main.html", {"erreur": f"Aucune protéine trouvée avec le nom '{nom}'."})
-    
-    # Affiche simplement le formulaire si ce n'est pas une requête POST
+        try:
+            proteine = trouver_proteine_par_nom(nom)
+            if proteine:
+                proteine_cleaned = {key.replace(" ", "_"): value for key, value in proteine.items()}
+                return render(request, "main/main.html", {"proteine": proteine_cleaned})
+            else:
+                return render(request, "main/main.html", {"erreur": f"Aucune protéine trouvée avec le nom '{nom}'."})
+        except ConnectionError as e:
+            return render(request, "main/main.html", {"erreur": "Problème de connexion à la base de données."})
+        except ValueError as e:
+            return render(request, "main/main.html", {"erreur": str(e)})
+
     return render(request, "main/main.html")
