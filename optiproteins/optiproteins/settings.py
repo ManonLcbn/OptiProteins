@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 from pathlib import Path
 from pymongo import MongoClient
+import neomodel
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -95,6 +97,20 @@ mongo_client = MongoClient(
 )
 
 mongo_db = mongo_client[MONGO_DB_SETTINGS['NAME']]
+
+
+#Configuration Neo4j
+NEOMODEL_NEO4J_BOLT_URL = "bolt://neo4j:proteindb@localhost:7687"
+
+NEOMODEL_SIGNALS = False
+
+bolt_url = os.environ.get('NEOMODEL_NEO4J_BOLT_URL', None)
+if not bolt_url:
+    bolt_url = "bolt://neo4j:password@localhost:7687"  # fallback
+
+neomodel.config.DATABASE_URL = bolt_url
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
