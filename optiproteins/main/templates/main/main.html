@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recherche Protéine</title>
+</head>
+<body>
+    <h1>Rechercher une protéine</h1>
+    
+    <!-- Formulaire de recherche -->
+    <form method="post" action="">
+        {% csrf_token %} <!-- Pour la sécurité Django -->
+        <label for="nom">Entrez un nom :</label>
+        <input type="text" id="nom" name="nom" required>
+        <button type="submit">Rechercher</button>
+    </form>
+    
+    <!-- Message d'erreur -->
+    {% if erreur %}
+        <p style="color: red;">{{ erreur }}</p>
+    {% endif %}
+    
+    <!-- Résultat de la recherche -->
+    {% if proteine %}
+        <h2>Résultat :</h2>
+        <p><strong>Nom :</strong> {{ proteine }}</p>
+    {% endif %}
+</body>
+</html>
