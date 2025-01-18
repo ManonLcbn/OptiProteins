@@ -91,12 +91,6 @@ MONGO_DB_SETTINGS = {
     'PORT': 27017,     
 }
 
-mongo_client = MongoClient(
-    host=MONGO_DB_SETTINGS['HOST'],
-    port=MONGO_DB_SETTINGS['PORT']
-)
-
-mongo_db = mongo_client[MONGO_DB_SETTINGS['NAME']]
 
 
 #Configuration Neo4j
