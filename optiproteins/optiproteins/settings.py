@@ -100,7 +100,7 @@ NEOMODEL_SIGNALS = False
 
 bolt_url = os.environ.get('NEOMODEL_NEO4J_BOLT_URL', None)
 if not bolt_url:
-    bolt_url = "bolt://neo4j:password@localhost:7687"  # fallback
+    bolt_url = "bolt://neo4j:proteindb@localhost:7687" 
 
 neomodel.config.DATABASE_URL = bolt_url
 

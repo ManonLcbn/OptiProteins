@@ -4,6 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recherche Protéine</title>
+
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js">
+    </script>
+
+    <style>
+      #network {
+          width: 800px;
+          height: 500px;
+          border: 1px solid lightgray;
+          margin-top: 20px;
+      }
+    </style>
+    
 </head>
 <body>
     <h1>Rechercher une protéine</h1>
@@ -33,6 +48,79 @@
         <p><strong>EC number :</strong> {{ proteine.EC_number }}</p>
         <p><strong>InterPro :</strong> {{ proteine.InterPro }}</p>
     
+    {% endif %}
+
+
+
+    {% if similarities %}
+    <h2>Similarités Jaccard (Neo4j)</h2>
+    <div id="network"></div>
+
+    <script>
+      let nodes = [];
+      let edges = [];// Construire un tableau JavaScript des similarités
+
+      // Définir l'ID central à partir de 'Entry_Name' pour éviter les collisions
+      let centralId = "{{ proteine.Entry_Name|escapejs }}";
+
+      // Ajouter le nœud central (en rouge)
+      nodes.push({
+        id: centralId,
+        label: centralId,
+        color: 'red'
+      });
+
+      let similarities = [
+          {% for item in similarities %}
+              {
+                  "entry": "{{ item.protein.entry|escapejs }}",
+                  "entryName": "{{ item.protein.entryName|default:item.protein.entry|escapejs }}",
+                  "similarity": {{ item.similarity }}
+              },
+          {% endfor %}
+      ];
+
+      // Parcourir le tableau des similarités pour ajouter les voisins
+      similarities.forEach(function(item) {
+          let neighborId = item.entryName || item.entry;  // Utiliser 'entryName' si disponible
+          let neighborName = item.entryName || item.entry;
+          let similarity = item.similarity.toFixed(2);    // Arrondir à 2 décimales
+
+          // Ajouter le nœud voisin
+          nodes.push({
+              id: neighborId,
+              label: neighborName
+          });
+
+          // Ajouter l'arête entre le nœud central et le voisin
+          edges.push({
+              from: centralId,
+              to: neighborId,
+              label: similarity
+          });
+      });
+
+      console.log("DEBUG - nodes:", nodes);
+      console.log("DEBUG - edges:", edges);
+
+      // Initialiser le graphe Vis.js
+      let container = document.getElementById('network');
+      let data = {
+        nodes: new vis.DataSet(nodes),
+        edges: new vis.DataSet(edges)
+      };
+      let options = {
+        edges: {
+          font: { align: 'horizontal' },
+          arrows: { to: { enabled: true } }
+        },
+        physics: {
+          enabled: true
+        },
+      };
+
+      let network = new vis.Network(container, data, options);
+    </script>
     {% endif %}
 </body>
 </html>

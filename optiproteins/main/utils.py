@@ -26,7 +26,7 @@ def get_jaccard_similarities(entry_name, min_jacc=0.0):
 
     output = []
     for c in candidates:
-        if c.entry == entry_name:
+        if c.entryName == entry_name:
             continue
         c_set = set(c.interPro)
         intersection = central_interpros.intersection(c_set)
@@ -36,6 +36,7 @@ def get_jaccard_similarities(entry_name, min_jacc=0.0):
 
         jacc = len(intersection) / len(union)
         if jacc >= min_jacc:
+            print({"protein": c, "similarity": jacc})
             output.append({"protein": c, "similarity": jacc})
 
     return output

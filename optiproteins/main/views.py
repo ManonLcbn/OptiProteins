@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from .requetesmongo import trouver_proteine_par_nom
+from .utils import get_jaccard_similarities
 
 def recherche_prots(request):
     if request.method == "POST":
@@ -10,8 +11,17 @@ def recherche_prots(request):
         try:
             proteine = trouver_proteine_par_nom(nom)
             if proteine:
+                
                 proteine_cleaned = {key.replace(" ", "_"): value for key, value in proteine.items()}
-                return render(request, "main/main.html", {"proteine": proteine_cleaned})
+                
+                jaccard_data = get_jaccard_similarities(nom, min_jacc=0.5)
+                
+                context = {
+                    "proteine": proteine_cleaned,  
+                    "similarities": jaccard_data,
+                }
+                
+                return render(request, "main/main.html", context)
             else:
                 return render(request, "main/main.html", {"erreur": f"Aucune protéine trouvée avec le nom '{nom}'."})
         except ConnectionError as e:
