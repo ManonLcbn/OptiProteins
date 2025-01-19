@@ -118,6 +118,15 @@
               name="min_jacc" 
               value="{{ request.POST.min_jacc|default:'' }}" 
           ><br>
+          <label for="two_levels">
+            <input 
+                type="checkbox" 
+                id="two_levels" 
+                name="two_levels" 
+                {% if request.POST.two_levels %}checked{% endif %}
+            >
+            2 niveaux de profondeurs
+        </label><br>
           <p><em>Remplissez ce champ uniquement si vous voulez afficher le graphe.</em></p>
       </div>
 
@@ -133,7 +142,7 @@
     {% endif %}
     
     <!-- Résultat de la recherche -->
-    {% if proteine and not similarities%}
+    {% if proteine and not nodes_json%}
         <h2>Informations :</h2>
         <p><strong>Entry :</strong> {{ proteine.Entry }}</p>
         <p><strong>Entry Name :</strong> {{ proteine.Entry_Name }}</p>
@@ -148,56 +157,33 @@
 
 
 
-    {% if similarities %}
+    <!-- Graphe des Similarités -->
+    {% if nodes_json and edges_json %}
     <h2>Similarités Jaccard (Neo4j) (min_jacc = {{ min_jacc }})</h2>
     <div id="network"></div>
 
     <script>
-      let nodes = [];
-      let edges = [];// Construire un tableau JavaScript des similarités
+      // Récupérer les données JSON passées depuis le backend
+      let nodes = {{ nodes_json|safe }};
+      let edges = {{ edges_json|safe }};
 
-      // Définir l'ID central à partir de 'Entry_Name' pour éviter les collisions
+      // Définir l'ID central pour le styliser
       let centralId = "{{ proteine.Entry_Name|escapejs }}";
 
-      // Ajouter le nœud central (en rouge)
-      nodes.push({
-        id: centralId,
-        label: centralId,
-        color: 'red'
+      // Styliser le nœud central en rouge
+      nodes = nodes.map(n => {
+          if (n.id === centralId){
+              return {...n, color: 'red'};
+          }
+          return n;
       });
 
-      let similarities = [
-          {% for item in similarities %}
-              {
-                  "entry": "{{ item.protein.entry|escapejs }}",
-                  "entryName": "{{ item.protein.entryName|default:item.protein.entry|escapejs }}",
-                  "similarity": {{ item.similarity }}
-              },
-          {% endfor %}
-      ];
-
-      // Parcourir le tableau des similarités pour ajouter les voisins
-      similarities.forEach(function(item) {
-          let neighborId = item.entryName || item.entry;  // Utiliser 'entryName' si disponible
-          let neighborName = item.entryName || item.entry;
-          let similarity = item.similarity.toFixed(2);    // Arrondir à 2 décimales
-
-          // Ajouter le nœud voisin
-          nodes.push({
-              id: neighborId,
-              label: neighborName
-          });
-
-          // Ajouter l'arête entre le nœud central et le voisin
-          edges.push({
-              from: centralId,
-              to: neighborId,
-              label: similarity
-          });
-      });
-
-      console.log("DEBUG - nodes:", nodes);
-      console.log("DEBUG - edges:", edges);
+      // Ajouter des labels aux arêtes
+      edges = edges.map(e => ({
+          from: e.from,
+          to: e.to,
+          label: e.similarity.toFixed(2)
+      }));
 
       // Initialiser le graphe Vis.js
       let container = document.getElementById('network');
@@ -208,20 +194,56 @@
       let options = {
         edges: {
           font: { align: 'horizontal' },
-          arrows: { to: { enabled: true } }
+          arrows: { to: { enabled: true } },
+          labelHighlightBold: true,
+          smooth: {
+            type: 'cubicBezier',
+            forceDirection: 'horizontal',
+            roundness: 0.4
+          }
+        },
+        nodes: {
+          shape: 'dot',
+          size: 16,
+          font: {
+            size: 14,
+            color: '#00000'
+          },
+          borderWidth: 2
         },
         physics: {
-          enabled: true
+          enabled: true,
+          stabilization: {
+            iterations: 200
+          }
         },
+        layout: {
+          improvedLayout: true
+        },
+        interaction: {
+          hover: true,
+          tooltipDelay: 200
+        }
       };
 
-      
       let network = new vis.Network(container, data, options);
+
+      // Ajouter des tooltips pour les nœuds
+      network.on("hoverNode", function (params) {
+          let node = nodes.find(n => n.id === params.node);
+          if (node) {
+              let tooltip = `<strong>${node.label}</strong>`;
+              network.body.container.title = tooltip;
+          }
+      });
+
+      network.on("blurNode", function (params) {
+          network.body.container.title = "";
+      });
     </script>
     {% endif %}
 
-
-
+    <!-- Propagation des EC Numbers -->
     {% if ec_propagation %}
         <h2>Propagation des EC Numbers</h2>
         <table>
@@ -242,10 +264,9 @@
         </table>
     {% endif %}
 
-    {% if not ec_propagation and similarities %}
+    {% if not ec_propagation and edges_json %}
         <h2>Pas d'EC numbers à propager</h2>
     {% endif %}
-
 
 </body>
 </html>
