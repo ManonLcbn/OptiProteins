@@ -63,15 +63,13 @@ def recherche_prots(request):
                         proteine_cleaned = {key.replace(" ", "_"): value for key, value in proteine.items()}
                         
                         entry_name = proteine_cleaned['Entry_Name']
-                        if two_levels:
-                            graph_data = get_jaccard_similarities_two_levels(entry_name, min_jacc)
-                        else:
-                            similarities = get_jaccard_similarities(entry_name, min_jacc = 0)
-                            graph_data = {
-                                'nodes': [{'id': entry_name, 'label': entry_name, 'color': 'red'}] + 
-                                         [{'id': s['protein'].entryName or s['protein'].entry, 'label': s['protein'].entryName or s['protein'].entry} for s in similarities if s['similarity'] >= min_jacc],
-                                'edges': [{'from': entry_name, 'to': (s['protein'].entryName or s['protein'].entry), 'similarity': s['similarity']} for s in similarities if s['similarity'] >= min_jacc]
-                            }
+                        similarities = get_jaccard_similarities(entry_name, min_jacc = 0)
+                        neighbors_similarities=[s for s in similarities if s['similarity'] >= min_jacc]
+                        graph_data = {
+                            'nodes': [{'id': entry_name, 'label': entry_name, 'color': 'red'}] + 
+                                        [{'id': s['protein'].entryName or s['protein'].entry, 'label': s['protein'].entryName or s['protein'].entry} for s in neighbors_similarities],
+                            'edges': [{'from': entry_name, 'to': (s['protein'].entryName or s['protein'].entry), 'similarity': s['similarity']} for s in neighbors_similarities]
+                        }
                         
                         # Préparer les données pour le graphe
                         nodes_json = json.dumps(graph_data['nodes'])
@@ -79,22 +77,17 @@ def recherche_prots(request):
                         
                         # Propagation des EC Numbers basée sur toutes les similarités
                         if two_levels:
-                            # Extraire toutes les protéines impliquées dans le graphe
-                            all_proteins = set(node['id'] for node in graph_data['nodes'])
-                            # Récupérer les objets Protein correspondants
-                            proteins = Protein.nodes.filter(entryName__in=list(all_proteins))
-                            # Calculer la propagation des EC Numbers
-                            ec_prob = defaultdict(float)
-                            for protein in proteins:
-                                similarity = 1  # Vous pouvez ajuster la pondération si nécessaire
-                                for ec in protein.ecNumbers or []:
-                                    ec_prob[ec] += similarity
-                            # Trier et sélectionner les top EC Numbers
-                            sorted_ec = sorted(ec_prob.items(), key=lambda x: x[1], reverse=True)
-                            top_ec = sorted_ec[:10]
-                            ec_propagation = [{"ec_number": ec, "probabilité": prob} for ec, prob in top_ec]
-                        else:
-                            ec_propagation = propagate_ec_numbers(similarities)
+                            graph_data_two_levels={'nodes': graph_data['nodes'], 'edges': graph_data['edges']}
+                            existing_node_ids = {node['id'] for node in graph_data['nodes']}
+                            similarities_two_levels=[]
+                            for s in neighbors_similarities:
+                                similarities_two_levels.extend(get_jaccard_similarities(s['protein'].entryName, min_jacc = min_jacc))
+                                graph_data_two_levels['nodes'].extend([{'id': s2['protein'].entryName or s2['protein'].entry, 'label': s2['protein'].entryName or s2['protein'].entry} for s2 in similarities_two_levels if s2['similarity'] >= min_jacc and s2['protein'].entryName not in existing_node_ids])
+                                graph_data_two_levels['edges'].extend([{'from': s['protein'].entryName, 'to': (s2['protein'].entryName or s2['protein'].entry), 'similarity': s2['similarity']} for s2 in similarities_two_levels if s2['similarity'] >= min_jacc and s['protein'].entryName!=s2['protein'].entryName and s2['protein'].entryName!=entry_name])                            
+                            nodes_json = json.dumps(graph_data['nodes'])
+                            edges_json = json.dumps(graph_data['edges'])
+                            
+                        ec_propagation = propagate_ec_numbers(similarities)
                         
                         return render(request, "main/main.html", {
                             "nodes_json": nodes_json,
