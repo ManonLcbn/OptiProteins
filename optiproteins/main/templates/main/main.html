@@ -215,8 +215,37 @@
         },
       };
 
+      
       let network = new vis.Network(container, data, options);
     </script>
     {% endif %}
+
+
+
+    {% if ec_propagation %}
+        <h2>Propagation des EC Numbers</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>EC Number</th>
+                    <th>Probabilité</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ec in ec_propagation %}
+                    <tr>
+                        <td>{{ ec.ec_number }}</td>
+                        <td>{{ ec.probability|floatformat:2 }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    {% if not ec_propagation and similarities %}
+        <h2>Pas d'EC numbers à propager</h2>
+    {% endif %}
+
+
 </body>
 </html>

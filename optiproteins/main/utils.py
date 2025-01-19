@@ -43,3 +43,26 @@ def get_jaccard_similarities(entry_name, min_jacc=0.0):
     return output
 
 
+
+def propagate_ec_numbers(similarities, top_n=10):
+    """
+    Propage les EC Numbers vers la protéine cible basée sur les similarités.
+    Retourne un tableau des top_n EC Numbers avec les plus hautes probabilités.
+    """
+    ec_prob = defaultdict(float)
+
+    for item in similarities:
+        protein = item['protein']
+        similarity = item['similarity']
+        ec_numbers = protein.ecNumbers or []  
+        for ec in ec_numbers:
+            ec_prob[ec] += similarity 
+
+    sorted_ec = sorted(ec_prob.items(), key=lambda x: x[1], reverse=True)
+
+    top_ec = sorted_ec[:top_n]
+
+    result = [{"ec_number": ec, "probability": prob} for ec, prob in top_ec]
+
+    return result
+

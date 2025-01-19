@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .requetesmongo import trouver_proteine_par_id,trouver_proteine_par_nom,trouver_proteine_par_description
-from .utils import get_jaccard_similarities
+from .utils import get_jaccard_similarities, propagate_ec_numbers
 
 def recherche_prots(request):
     if request.method == "POST":
@@ -23,6 +23,7 @@ def recherche_prots(request):
             return render(request, "main/main.html", {"erreur": "Veuillez remplir un champ."})
         
         if action == "rechercher":
+            
             if id or name or description:
                 try:
                     proteine = None
@@ -56,10 +57,13 @@ def recherche_prots(request):
                     
                     if proteine:
                         proteine_cleaned = {key.replace(" ", "_"): value for key, value in proteine.items()}
-                        jaccard_data = get_jaccard_similarities(proteine_cleaned['Entry_Name'], min_jacc=min_jacc)
+                        jaccard_data = get_jaccard_similarities(proteine_cleaned['Entry_Name'], min_jacc=0)
+                        ec_propagation = propagate_ec_numbers(jaccard_data)
+                        print(ec_propagation)
                         return render(request, "main/main.html", {
-                            "similarities": jaccard_data,
-                            "min_jacc": min_jacc
+                            "similarities": [item for item in jaccard_data if item['similarity'] >= min_jacc],
+                            "min_jacc": min_jacc,
+                            "ec_propagation": ec_propagation
                         })
                     else:
                         return render(request, "main/main.html", {"erreur": "Protéine non trouvée pour afficher le graphe."})
@@ -69,3 +73,4 @@ def recherche_prots(request):
                 return render(request, "main/main.html", {"erreur": "Veuillez entrer des informations pour afficher le graphe."})
 
     return render(request, "main/main.html")
+
