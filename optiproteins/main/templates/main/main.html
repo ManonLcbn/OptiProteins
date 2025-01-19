@@ -11,6 +11,59 @@
     </script>
 
     <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+
+      form {
+          margin-bottom: 20px;
+          border: 1px solid #ddd;
+          padding: 15px;
+          border-radius: 8px;
+          background-color: #f9f9f9;
+      }
+
+      .form-section {
+          margin-bottom: 15px;
+      }
+
+      .form-section h3 {
+          margin-bottom: 10px;
+      }
+
+      label {
+          display: block;
+          margin-bottom: 5px;
+          font-weight: bold;
+      }
+
+      input[type="text"], button {
+          margin-bottom: 10px;
+          padding: 8px;
+          width: 100%;
+          box-sizing: border-box;
+      }
+
+      button {
+          background-color: #007bff;
+          color: white;
+          border: none;
+          cursor: pointer;
+      }
+
+      button:hover {
+          background-color: #0056b3;
+      }
+
+      .error {
+          color: red;
+          font-weight: bold;
+      }
+
+      .success {
+          color: green;
+      }
       #network {
           width: 800px;
           height: 500px;
@@ -25,14 +78,53 @@
     
     <!-- Formulaire de recherche -->
     <form method="post" action="">
-        {% csrf_token %} <!-- Pour la sécurité Django -->
-        <label for="id">Entrez un identifiant :</label>
-        <input type="text" id="id" name="id">        
-        <label for="name">Entrez un nom :</label>
-        <input type="text" id="name" name="name">
-        <label for="description">Entrez une description :</label>
-        <input type="text" id="description" name="description">
-        <button type="submit">Rechercher</button>
+      {% csrf_token %}
+      
+      <div class="form-section">
+          <h3>Champs de recherche</h3>
+          <label for="id">Entrez un identifiant :</label>
+          <input 
+              type="text" 
+              id="id" 
+              name="id" 
+              value="{{ request.POST.id|default:'' }}" 
+          ><br>
+          
+          <label for="name">Entrez un nom :</label>
+          <input 
+              type="text" 
+              id="name" 
+              name="name" 
+              value="{{ request.POST.name|default:'' }}" 
+          ><br>
+
+          <label for="description">Entrez une description :</label>
+          <input 
+              type="text" 
+              id="description" 
+              name="description" 
+              value="{{ request.POST.description|default:'' }}" 
+          ><br>
+
+          <p><em>Au moins un de ces champs doit être rempli.</em></p>
+      </div>
+      
+      <div class="form-section">
+          <h3>Paramètres pour le graphe</h3>
+          <label for="min_jacc">Valeur minimale de similarité Jaccard (entre 0 et 1) :</label>
+          <input 
+              type="text" 
+              id="min_jacc" 
+              name="min_jacc" 
+              value="{{ request.POST.min_jacc|default:'' }}" 
+          ><br>
+          <p><em>Remplissez ce champ uniquement si vous voulez afficher le graphe.</em></p>
+      </div>
+
+      <div class="form-section">
+          <button type="submit" name="action" value="rechercher">Rechercher</button>
+          <button type="submit" name="action" value="afficher_graphe">Afficher le graphe</button>
+      </div>
     </form>
     
     <!-- Message d'erreur -->
@@ -41,7 +133,7 @@
     {% endif %}
     
     <!-- Résultat de la recherche -->
-    {% if proteine %}
+    {% if proteine and not similarities%}
         <h2>Informations :</h2>
         <p><strong>Entry :</strong> {{ proteine.Entry }}</p>
         <p><strong>Entry Name :</strong> {{ proteine.Entry_Name }}</p>
@@ -57,7 +149,7 @@
 
 
     {% if similarities %}
-    <h2>Similarités Jaccard (Neo4j)</h2>
+    <h2>Similarités Jaccard (Neo4j) (min_jacc = {{ min_jacc }})</h2>
     <div id="network"></div>
 
     <script>

@@ -36,7 +36,6 @@ def get_jaccard_similarities(entry_name, min_jacc=0.0):
 
         jacc = len(intersection) / len(union)
         if jacc >= min_jacc:
-            print({"protein": c, "similarity": jacc})
             output.append({"protein": c, "similarity": jacc})
 
     return output
