@@ -1,4 +1,7 @@
 from .models import Protein
+from neomodel import db
+from collections import defaultdict
+
 
 def get_jaccard_similarities(entry_name, min_jacc=0.0):
     """
@@ -14,7 +17,6 @@ def get_jaccard_similarities(entry_name, min_jacc=0.0):
 
     central_interpros = set(central.interPro)
 
-    from neomodel import db
     query = """
     MATCH (p:Protein)
     WHERE ANY(x IN p.interPro WHERE x IN $centralList)
@@ -36,7 +38,8 @@ def get_jaccard_similarities(entry_name, min_jacc=0.0):
 
         jacc = len(intersection) / len(union)
         if jacc >= min_jacc:
-            print({"protein": c, "similarity": jacc})
             output.append({"protein": c, "similarity": jacc})
 
     return output
+
+
