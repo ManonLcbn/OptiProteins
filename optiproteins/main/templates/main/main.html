@@ -26,8 +26,12 @@
     <!-- Formulaire de recherche -->
     <form method="post" action="">
         {% csrf_token %} <!-- Pour la sécurité Django -->
-        <label for="nom">Entrez un nom :</label>
-        <input type="text" id="nom" name="nom" required>
+        <label for="id">Entrez un identifiant :</label>
+        <input type="text" id="id" name="id">        
+        <label for="name">Entrez un nom :</label>
+        <input type="text" id="name" name="name">
+        <label for="description">Entrez une description :</label>
+        <input type="text" id="description" name="description">
         <button type="submit">Rechercher</button>
     </form>
     
