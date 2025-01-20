@@ -72,10 +72,11 @@ def recherche_prots(request):
                         similarities = get_jaccard_similarities(entry_name, min_jacc = 0)
                         neighbors_similarities=[s for s in similarities if s['similarity'] >= min_jacc]
                         graph_data = {
-                            'nodes': [{'id': entry_name, 'label': entry_name, 'color': 'red'}] + 
-                                        [{'id': s['protein'].entryName or s['protein'].entry, 'label': s['protein'].entryName or s['protein'].entry} for s in neighbors_similarities],
+                            'nodes': [{'id': entry_name, 'label': entry_name, 'color': 'red','entry': proteine_cleaned['Entry'],'entryName': proteine_cleaned['Entry_Name'],'proteinNames': proteine_cleaned['Protein_names'],'geneNames': proteine_cleaned['Gene_Names'],'organism': proteine_cleaned['Organism'],'ecNumber': proteine_cleaned['EC_number']}] + 
+                                        [{'id': s['protein'].entryName or s['protein'].entry, 'label': s['protein'].entryName or s['protein'].entry, 'entry': s['protein'].entry,'entryName': s['protein'].entryName,'proteinNames': s['protein'].proteinNames,'geneNames': s['protein'].geneNames,'organism': s['protein'].organism,'ecNumber': s['protein'].ecNumbers} for s in neighbors_similarities],
                             'edges': [{'from': entry_name, 'to': (s['protein'].entryName or s['protein'].entry), 'similarity': s['similarity']} for s in neighbors_similarities]
                         }
+                        print(graph_data)
                         
                         # Préparer les données pour le graphe
                         nodes_json = json.dumps(graph_data['nodes'])

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recherche Protéine</title>
 
+    <!-- Vis.js -->
     <script
       type="text/javascript"
       src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js">
@@ -14,6 +15,11 @@
       body {
         font-family: Arial, sans-serif;
         margin: 20px;
+        background-color: #fafafa;
+      }
+
+      h1 {
+        color: #333;
       }
 
       form {
@@ -21,7 +27,7 @@
           border: 1px solid #ddd;
           padding: 15px;
           border-radius: 8px;
-          background-color: #f9f9f9;
+          background-color: #fff;
       }
 
       .form-section {
@@ -30,19 +36,25 @@
 
       .form-section h3 {
           margin-bottom: 10px;
+          color: #555;
       }
 
       label {
           display: block;
           margin-bottom: 5px;
           font-weight: bold;
+          color: #555;
       }
 
-      input[type="text"], button {
+      input[type="text"], button, select {
           margin-bottom: 10px;
           padding: 8px;
           width: 100%;
           box-sizing: border-box;
+      }
+
+      select {
+          width: 50%;
       }
 
       button {
@@ -50,6 +62,9 @@
           color: white;
           border: none;
           cursor: pointer;
+          border-radius: 4px;
+          padding: 10px 15px;
+          font-size: 14px;
       }
 
       button:hover {
@@ -64,12 +79,69 @@
       .success {
           color: green;
       }
+
+      /* Conteneur qui regroupe le graphe et la zone d'information côte à côte */
+      .graph-section {
+          display: flex;
+          align-items: flex-start; /* Aligne le haut du bloc info avec le haut du graphe */
+      }
+
+      /* Zone du graphe : largeur 60%, hauteur 600px */
       #network {
-          width: 800px;
-          height: 500px;
+          width: 60%;
+          height: 600px;
           border: 1px solid lightgray;
           margin-top: 20px;
+          border-radius: 8px;
+          background-color: #fff;
       }
+
+      /* Div d'affichage des infos protéine : largeur 35%, margin-left pour l'espacer du graphe */
+      #protein-info {
+          width: 35%;
+          height: 580px;
+          margin-top: 20px;
+          margin-left: 20px;
+          border: 1px solid #ddd;
+          padding-top: 20px;
+          padding-left: 20px;
+          background-color: #fff;
+          border-radius: 8px;
+          display: none; /* caché au début */
+      }
+
+      /* Suggestions dans la recherche */
+      #suggestions {
+          list-style: none; 
+          padding: 0; 
+          margin: 0; 
+          border: 1px solid #ccc;
+          background-color: #fff;
+      }
+      #suggestions li {
+          padding: 5px;
+      }
+      #suggestions li:hover {
+          background-color: #f0f0f0;
+      }
+
+      /* Style pour table de propagation EC Numbers */
+      table {
+          width: 50%;
+          border-collapse: collapse;
+          margin-top: 10px;
+          background-color: #fff;
+      }
+
+      table, th, td {
+          border: 1px solid #ccc;
+          padding: 8px;
+      }
+
+      th {
+          background-color: #f9f9f9;
+      }
+
     </style>
     
 </head>
@@ -86,9 +158,9 @@
           <!-- Menu déroulant pour choisir le type de recherche -->
           <label for="search_type">Rechercher par :</label>
           <select id="search_type" name="search_type">
-              <option value="id">Identifiant</option>
-              <option value="name">Nom</option>
-              <option value="description">Description</option>
+              <option value="id" {% if request.POST.search_type == "id" %}selected{% endif %}>Identifiant</option>
+              <option value="name" {% if request.POST.search_type == "name" %}selected{% endif %}>Nom</option>
+              <option value="description" {% if request.POST.search_type == "description" %}selected{% endif %}>Description</option>
           </select><br>
           
           <!-- Champ de texte pour la recherche -->
@@ -103,7 +175,7 @@
           >
           
           <!-- Liste des suggestions -->
-          <ul id="suggestions" style="list-style: none; padding: 0; margin: 0; border: 1px solid #ccc;"></ul>
+          <ul id="suggestions"></ul>
       </div>
       
       <div class="form-section">
@@ -133,6 +205,7 @@
       </div>
     </form>
     
+    <!-- Script pour l'autocomplete -->
     <script>
       async function fetchSuggestions() {
         const query = document.getElementById("search_input").value;
@@ -162,9 +235,6 @@
                     const li = document.createElement("li");
                     li.textContent = suggestion;
                     li.style.cursor = "pointer";
-                    li.style.padding = "5px";
-                    li.onmouseover = () => li.style.backgroundColor = "#f0f0f0";
-                    li.onmouseout = () => li.style.backgroundColor = "#fff";
     
                     li.onclick = () => {
                         // Insérer la suggestion dans le champ de texte
@@ -185,13 +255,12 @@
         } else {
             document.getElementById("suggestions").innerHTML = ""; // Effacer si moins de 2 caractères
         }
-    }
-    
+      }
     </script>
     
     <!-- Message d'erreur -->
     {% if erreur %}
-        <p style="color: red;">{{ erreur }}</p>
+        <p class="error">{{ erreur }}</p>
     {% endif %}
     
     <!-- Résultat de la recherche -->
@@ -205,33 +274,37 @@
         <p><strong>Sequence :</strong> {{ proteine.Sequence }}</p>
         <p><strong>EC number :</strong> {{ proteine.EC_number }}</p>
         <p><strong>InterPro :</strong> {{ proteine.InterPro }}</p>
-    
     {% endif %}
-
-
 
     <!-- Graphe des Similarités -->
     {% if nodes_json and edges_json %}
-    <h2>Similarités Jaccard {{proteine.Entry}} (min_jacc = {{ min_jacc }})</h2>
-    <div id="network"></div>
+    <h2>Similarités Jaccard {{ proteine.Entry }} (min_jacc = {{ min_jacc }})</h2>
+
+    <div class="graph-section">
+      <!-- Conteneur pour le graphe -->
+      <div id="network"></div>
+
+      <!-- Conteneur pour afficher les infos de la protéine cliquée -->
+      <div id="protein-info"></div>
+    </div>
 
     <script>
       // Récupérer les données JSON passées depuis le backend
       let nodes = {{ nodes_json|safe }};
       let edges = {{ edges_json|safe }};
 
-      // Définir l'ID central pour le styliser
+      // Identifier la protéine centrale
       let centralId = "{{ proteine.Entry_Name|escapejs }}";
 
-      // Styliser le nœud central en rouge
+      // Styliser le noeud central en rouge
       nodes = nodes.map(n => {
-          if (n.id === centralId){
+          if (n.id === centralId) {
               return {...n, color: 'red'};
           }
           return n;
       });
 
-      // Ajouter des labels aux arêtes
+      // Ajouter des labels aux arêtes (similarité)
       edges = edges.map(e => ({
           from: e.from,
           to: e.to,
@@ -260,7 +333,7 @@
           size: 16,
           font: {
             size: 14,
-            color: '#00000'
+            color: '#000'
           },
           borderWidth: 2
         },
@@ -281,17 +354,33 @@
 
       let network = new vis.Network(container, data, options);
 
-      // Ajouter des tooltips pour les nœuds
-      network.on("hoverNode", function (params) {
-          let node = nodes.find(n => n.id === params.node);
-          if (node) {
-              let tooltip = `<strong>${node.label}</strong>`;
-              network.body.container.title = tooltip;
-          }
-      });
+      // Sélection du div où on va afficher l'information
+      const infoDiv = document.getElementById('protein-info');
 
-      network.on("blurNode", function (params) {
-          network.body.container.title = "";
+      // Lorsque l'utilisateur clique sur un noeud
+      network.on("click", function (params) {
+        if (params.nodes.length > 0) {
+            let nodeId = params.nodes[0];
+            let clickedNode = data.nodes.get(nodeId);
+
+            // Construire le HTML d'informations (personnalise selon tes champs)
+            let infoHtml = `
+              <h3 style="margin-top: 0;">Informations Protéine</h3>
+              <p><strong>Entry :</strong> ${clickedNode.entry ?? 'N/A'}</p>
+              <p><strong>Entry Name :</strong> ${clickedNode.entryName ?? 'N/A'}</p>
+              <p><strong>Protein Names :</strong> ${clickedNode.proteinNames ?? 'N/A'}</p>
+              <p><strong>Gene Names :</strong> ${clickedNode.geneNames ?? 'N/A'}</p>
+              <p><strong>Organism :</strong> ${clickedNode.organism ?? 'N/A'}</p>
+              <p><strong>EC Number :</strong> ${clickedNode.ecNumber ?? 'N/A'}</p>
+            `;
+
+            infoDiv.innerHTML = infoHtml;
+            infoDiv.style.display = 'block';
+        } else {
+            // Si on clique ailleurs, on masque l'encart d'infos
+            infoDiv.style.display = 'none';
+            infoDiv.innerHTML = '';
+        }
       });
     </script>
     {% endif %}
