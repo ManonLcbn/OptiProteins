@@ -1,7 +1,19 @@
 from .models import Protein
 from neomodel import db
 from collections import defaultdict
+from optiproteins.mongodb import mongo_db
 
+def find_protein_mongo(search_input, search_type):
+    collection = mongo_db["proteins"]
+    query = {}
+    if search_type == "id":
+        query = {"Entry": {"$regex": search_input, "$options": "i"}}
+    elif search_type == "name":
+        query = {"Entry Name": {"$regex": search_input, "$options": "i"}}
+    elif search_type == "description":
+        query = {"Protein names": {"$regex": search_input, "$options": "i"}}
+
+    return collection.find_one(query)
 
 def get_jaccard_similarities(entry_name, min_jacc=0.0):
     """

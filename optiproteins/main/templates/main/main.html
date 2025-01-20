@@ -82,31 +82,28 @@
       
       <div class="form-section">
           <h3>Champs de recherche</h3>
-          <label for="id">Entrez un identifiant :</label>
-          <input 
-              type="text" 
-              id="id" 
-              name="id" 
-              value="{{ request.POST.id|default:'' }}" 
-          ><br>
           
-          <label for="name">Entrez un nom :</label>
+          <!-- Menu déroulant pour choisir le type de recherche -->
+          <label for="search_type">Rechercher par :</label>
+          <select id="search_type" name="search_type">
+              <option value="id">Identifiant</option>
+              <option value="name">Nom</option>
+              <option value="description">Description</option>
+          </select><br>
+          
+          <!-- Champ de texte pour la recherche -->
+          <label for="search_input">Entrez une valeur :</label>
           <input 
               type="text" 
-              id="name" 
-              name="name" 
-              value="{{ request.POST.name|default:'' }}" 
-          ><br>
-
-          <label for="description">Entrez une description :</label>
-          <input 
-              type="text" 
-              id="description" 
-              name="description" 
-              value="{{ request.POST.description|default:'' }}" 
-          ><br>
-
-          <p><em>Au moins un de ces champs doit être rempli.</em></p>
+              id="search_input" 
+              name="search_input" 
+              oninput="fetchSuggestions()" 
+              autocomplete="off"
+              value="{{ request.POST.search_input|default:'' }}"
+          >
+          
+          <!-- Liste des suggestions -->
+          <ul id="suggestions" style="list-style: none; padding: 0; margin: 0; border: 1px solid #ccc;"></ul>
       </div>
       
       <div class="form-section">
@@ -115,8 +112,8 @@
           <input 
               type="text" 
               id="min_jacc" 
-              name="min_jacc" 
-              value="{{ request.POST.min_jacc|default:'' }}" 
+              name="min_jacc"
+              value="{{ request.POST.min_jacc|default:'0.8' }}"
           ><br>
           <label for="two_levels">
             <input 
@@ -126,15 +123,71 @@
                 {% if request.POST.two_levels %}checked{% endif %}
             >
             2 niveaux de profondeurs
-        </label><br>
+          </label><br>
           <p><em>Remplissez ce champ uniquement si vous voulez afficher le graphe.</em></p>
       </div>
-
+    
       <div class="form-section">
           <button type="submit" name="action" value="rechercher">Rechercher</button>
           <button type="submit" name="action" value="afficher_graphe">Afficher le graphe</button>
       </div>
     </form>
+    
+    <script>
+      async function fetchSuggestions() {
+        const query = document.getElementById("search_input").value;
+        const type = document.getElementById("search_type").value;
+    
+        if (query.length > 1) { // Commencer la recherche après 2 caractères
+            const response = await fetch("", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    action: "autocomplete",
+                    query: query,
+                    type: type
+                })
+            });
+    
+            const suggestions = await response.json();
+            const suggestionList = document.getElementById("suggestions");
+            suggestionList.innerHTML = ""; // Vider les suggestions précédentes
+    
+            if (suggestions.length > 0) {
+                // Ajouter les suggestions à la liste
+                suggestions.forEach(suggestion => {
+                    const li = document.createElement("li");
+                    li.textContent = suggestion;
+                    li.style.cursor = "pointer";
+                    li.style.padding = "5px";
+                    li.onmouseover = () => li.style.backgroundColor = "#f0f0f0";
+                    li.onmouseout = () => li.style.backgroundColor = "#fff";
+    
+                    li.onclick = () => {
+                        // Insérer la suggestion dans le champ de texte
+                        document.getElementById("search_input").value = suggestion;
+    
+                        // Marquer le champ comme "modifié"
+                        document.getElementById("search_input").dispatchEvent(new Event('input'));
+    
+                        // Effacer les suggestions après sélection
+                        suggestionList.innerHTML = "";
+                    };
+    
+                    suggestionList.appendChild(li);
+                });
+            } else {
+                suggestionList.innerHTML = "Aucune suggestion"; 
+            }
+        } else {
+            document.getElementById("suggestions").innerHTML = ""; // Effacer si moins de 2 caractères
+        }
+    }
+    
+    </script>
     
     <!-- Message d'erreur -->
     {% if erreur %}
@@ -159,7 +212,7 @@
 
     <!-- Graphe des Similarités -->
     {% if nodes_json and edges_json %}
-    <h2>Similarités Jaccard (Neo4j) (min_jacc = {{ min_jacc }})</h2>
+    <h2>Similarités Jaccard {{proteine.Entry}} (min_jacc = {{ min_jacc }})</h2>
     <div id="network"></div>
 
     <script>
