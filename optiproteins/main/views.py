@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from .requetesmongo import trouver_proteine_par_id,trouver_proteine_par_nom,trouver_proteine_par_description
-from .utils import get_jaccard_similarities, propagate_ec_numbers, get_jaccard_similarities_two_levels
+from .utils import get_jaccard_similarities, propagate_ec_numbers
 import json
 from collections import defaultdict
 from .models import Protein
