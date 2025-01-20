@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recherche Protéine</title>
 
-    <!-- Vis.js -->
     <script
       type="text/javascript"
       src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js">
@@ -80,13 +79,11 @@
           color: green;
       }
 
-      /* Conteneur qui regroupe le graphe et la zone d'information côte à côte */
       .graph-section {
           display: flex;
-          align-items: flex-start; /* Aligne le haut du bloc info avec le haut du graphe */
+          align-items: flex-start; 
       }
 
-      /* Zone du graphe : largeur 60%, hauteur 600px */
       #network {
           width: 60%;
           height: 600px;
@@ -96,7 +93,6 @@
           background-color: #fff;
       }
 
-      /* Div d'affichage des infos protéine : largeur 35%, margin-left pour l'espacer du graphe */
       #protein-info {
           width: 35%;
           height: 580px;
@@ -105,12 +101,13 @@
           border: 1px solid #ddd;
           padding-top: 20px;
           padding-left: 20px;
+          padding-right : 20px;
           background-color: #fff;
           border-radius: 8px;
-          display: none; /* caché au début */
+          display: none;      
+          overflow-wrap: break-word;
       }
 
-      /* Suggestions dans la recherche */
       #suggestions {
           list-style: none; 
           padding: 0; 
@@ -125,7 +122,6 @@
           background-color: #f0f0f0;
       }
 
-      /* Style pour table de propagation EC Numbers */
       table {
           width: 50%;
           border-collapse: collapse;
@@ -155,7 +151,6 @@
       <div class="form-section">
           <h3>Champs de recherche</h3>
           
-          <!-- Menu déroulant pour choisir le type de recherche -->
           <label for="search_type">Rechercher par :</label>
           <select id="search_type" name="search_type">
               <option value="id" {% if request.POST.search_type == "id" %}selected{% endif %}>Identifiant</option>
@@ -163,7 +158,6 @@
               <option value="description" {% if request.POST.search_type == "description" %}selected{% endif %}>Description</option>
           </select><br>
           
-          <!-- Champ de texte pour la recherche -->
           <label for="search_input">Entrez une valeur :</label>
           <input 
               type="text" 
@@ -174,7 +168,6 @@
               value="{{ request.POST.search_input|default:'' }}"
           >
           
-          <!-- Liste des suggestions -->
           <ul id="suggestions"></ul>
       </div>
       
@@ -211,7 +204,7 @@
         const query = document.getElementById("search_input").value;
         const type = document.getElementById("search_type").value;
     
-        if (query.length > 1) { // Commencer la recherche après 2 caractères
+        if (query.length > 1) { 
             const response = await fetch("", {
                 method: "POST",
                 headers: {
@@ -227,38 +220,30 @@
     
             const suggestions = await response.json();
             const suggestionList = document.getElementById("suggestions");
-            suggestionList.innerHTML = ""; // Vider les suggestions précédentes
+            suggestionList.innerHTML = ""; 
     
             if (suggestions.length > 0) {
-                // Ajouter les suggestions à la liste
                 suggestions.forEach(suggestion => {
                     const li = document.createElement("li");
                     li.textContent = suggestion;
                     li.style.cursor = "pointer";
     
                     li.onclick = () => {
-                        // Insérer la suggestion dans le champ de texte
                         document.getElementById("search_input").value = suggestion;
-    
-                        // Marquer le champ comme "modifié"
                         document.getElementById("search_input").dispatchEvent(new Event('input'));
-    
-                        // Effacer les suggestions après sélection
                         suggestionList.innerHTML = "";
                     };
-    
                     suggestionList.appendChild(li);
                 });
             } else {
                 suggestionList.innerHTML = "Aucune suggestion"; 
             }
         } else {
-            document.getElementById("suggestions").innerHTML = ""; // Effacer si moins de 2 caractères
+            document.getElementById("suggestions").innerHTML = "";
         }
       }
     </script>
     
-    <!-- Message d'erreur -->
     {% if erreur %}
         <p class="error">{{ erreur }}</p>
     {% endif %}
@@ -281,22 +266,16 @@
     <h2>Similarités Jaccard {{ proteine.Entry }} (min_jacc = {{ min_jacc }})</h2>
 
     <div class="graph-section">
-      <!-- Conteneur pour le graphe -->
       <div id="network"></div>
-
-      <!-- Conteneur pour afficher les infos de la protéine cliquée -->
       <div id="protein-info"></div>
     </div>
 
     <script>
-      // Récupérer les données JSON passées depuis le backend
       let nodes = {{ nodes_json|safe }};
       let edges = {{ edges_json|safe }};
 
-      // Identifier la protéine centrale
       let centralId = "{{ proteine.Entry_Name|escapejs }}";
 
-      // Styliser le noeud central en rouge
       nodes = nodes.map(n => {
           if (n.id === centralId) {
               return {...n, color: 'red'};
@@ -304,7 +283,6 @@
           return n;
       });
 
-      // Ajouter des labels aux arêtes (similarité)
       edges = edges.map(e => ({
           from: e.from,
           to: e.to,
@@ -354,30 +332,28 @@
 
       let network = new vis.Network(container, data, options);
 
-      // Sélection du div où on va afficher l'information
       const infoDiv = document.getElementById('protein-info');
 
-      // Lorsque l'utilisateur clique sur un noeud
       network.on("click", function (params) {
         if (params.nodes.length > 0) {
             let nodeId = params.nodes[0];
             let clickedNode = data.nodes.get(nodeId);
 
-            // Construire le HTML d'informations (personnalise selon tes champs)
             let infoHtml = `
-              <h3 style="margin-top: 0;">Informations Protéine</h3>
+              <h3 style="margin-top: 0;">Informations protéine</h3>
               <p><strong>Entry :</strong> ${clickedNode.entry ?? 'N/A'}</p>
               <p><strong>Entry Name :</strong> ${clickedNode.entryName ?? 'N/A'}</p>
               <p><strong>Protein Names :</strong> ${clickedNode.proteinNames ?? 'N/A'}</p>
               <p><strong>Gene Names :</strong> ${clickedNode.geneNames ?? 'N/A'}</p>
               <p><strong>Organism :</strong> ${clickedNode.organism ?? 'N/A'}</p>
+              <p><strong>Sequence :</strong> ${clickedNode.sequence ?? 'N/A'}</p>
+              <p><strong>InterPro :</strong> ${clickedNode.interPro ?? 'N/A'}</p>
               <p><strong>EC Number :</strong> ${clickedNode.ecNumber ?? 'N/A'}</p>
             `;
 
             infoDiv.innerHTML = infoHtml;
             infoDiv.style.display = 'block';
         } else {
-            // Si on clique ailleurs, on masque l'encart d'infos
             infoDiv.style.display = 'none';
             infoDiv.innerHTML = '';
         }

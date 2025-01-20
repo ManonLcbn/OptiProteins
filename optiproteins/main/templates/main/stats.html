@@ -47,16 +47,14 @@
         // Graphique: Distribution des fréquences des EC numbers
         var ctx = document.getElementById('freqGraph').getContext('2d');
 
-        // Trier les labels par ordre croissant (pour les abscisses)
         var freqLabels = {{ freq_labels|safe }};
         var freqCounts = {{ freq_counts|safe }};
 
-        // Trier les données par ordre croissant des labels
         var sortedIndices = freqLabels
-            .map((value, index) => [value, index]) // Associer les labels aux indices
-            .sort((a, b) => a[0] - b[0]) // Trier par les labels (par ordre croissant)
-            .map((e) => e[1]); // Extraire les indices triés
-
+            .map((value, index) => [value, index]) 
+            .sort((a, b) => a[0] - b[0])
+            .map((e) => e[1]); 
+            
         var sortedLabels = sortedIndices.map(i => freqLabels[i]);
         var sortedCounts = sortedIndices.map(i => freqCounts[i]);
 

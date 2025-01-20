@@ -4,7 +4,6 @@ import json
 from django.http import JsonResponse
 from optiproteins.mongodb import mongo_db
 from collections import Counter
-import pandas as pd
 
 def recherche_prots(request):
     if request.method == "POST":
@@ -24,7 +23,7 @@ def recherche_prots(request):
                     elif search_type == "description":
                         suggestions = collection.distinct("Protein names", {"Protein names": {"$regex": f"^{query}", "$options": "i"}})
 
-                return JsonResponse(suggestions[:10], safe=False)  # Limite à 10 suggestions
+                return JsonResponse(suggestions[:10], safe=False)  
         except json.JSONDecodeError:
             pass
         
@@ -74,8 +73,8 @@ def recherche_prots(request):
                         similarities = get_jaccard_similarities(entry_name, min_jacc = 0)
                         neighbors_similarities=[s for s in similarities if s['similarity'] >= min_jacc]
                         graph_data = {
-                            'nodes': [{'id': entry_name, 'label': proteine_cleaned['Entry'], 'color': 'red','entry': proteine_cleaned['Entry'],'entryName': proteine_cleaned['Entry_Name'],'proteinNames': proteine_cleaned['Protein_names'],'geneNames': proteine_cleaned['Gene_Names'],'organism': proteine_cleaned['Organism'],'ecNumber': proteine_cleaned['EC_number']}] + 
-                                        [{'id': s['protein'].entryName or s['protein'].entry, 'label': s['protein'].entry, 'entry': s['protein'].entry,'entryName': s['protein'].entryName,'proteinNames': s['protein'].proteinNames,'geneNames': s['protein'].geneNames,'organism': s['protein'].organism,'ecNumber': s['protein'].ecNumbers} for s in neighbors_similarities],
+                            'nodes': [{'id': entry_name, 'label': proteine_cleaned['Entry'], 'color': 'red','entry': proteine_cleaned['Entry'],'entryName': proteine_cleaned['Entry_Name'],'proteinNames': proteine_cleaned['Protein_names'],'geneNames': proteine_cleaned['Gene_Names'],'organism': proteine_cleaned['Organism'],'ecNumber': proteine_cleaned['EC_number'], 'Sequence': proteine_cleaned["Sequence"], 'interPro':proteine_cleaned['InterPro']}] + 
+                                        [{'id': s['protein'].entryName or s['protein'].entry, 'label': s['protein'].entry, 'entry': s['protein'].entry,'entryName': s['protein'].entryName,'proteinNames': s['protein'].proteinNames,'geneNames': s['protein'].geneNames,'organism': s['protein'].organism,'ecNumber': s['protein'].ecNumbers, 'sequence': s['protein'].sequence, 'interPro':s['protein'].interPro} for s in neighbors_similarities],
                             'edges': [{'from': entry_name, 'to': (s['protein'].entryName or s['protein'].entry), 'similarity': s['similarity']} for s in neighbors_similarities]
                         }
                         
@@ -116,25 +115,19 @@ def recherche_prots(request):
 def statistiques(request):
     collection = mongo_db["proteins"]
 
-    # Calcul des statistiques
     ec_numbers = [protein.get("EC number") for protein in collection.find({"EC number": {"$ne": ""}})]
     total_proteins = collection.count_documents({})
     proteins_without_ec = collection.count_documents({"EC number": ""})
 
-    # Comptage des EC numbers (nombre de protéines par EC number)
     ec_counts = Counter(ec_numbers)
-
-    # Distribution des fréquences des nombres de protéines par EC number
     count_frequencies = Counter(ec_counts.values())
 
-    # Préparer les données pour les graphiques
     ec_number_labels = list(ec_counts.keys())
     ec_number_counts = list(ec_counts.values())
 
     freq_labels = list(count_frequencies.keys())
     freq_counts = list(count_frequencies.values())
 
-    # Rendre la vue avec les données
     context = {
         "total_proteins": total_proteins,
         "proteins_without_ec": proteins_without_ec,
