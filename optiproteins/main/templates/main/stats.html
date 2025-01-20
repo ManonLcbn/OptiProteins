@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 20px auto;
+            max-width: 900px;
+            text-align: center;
+        }
+        .stats {
+            margin-bottom: 20px;
+        }
+        canvas {
+            width: 100%;
+            height: 600px; /* Augmenter la taille pour éviter que les abscisses soient tronquées */
+        }
+        .graphs {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Protein Database Statistics</h1>
+        <div class="stats">
+            <p><strong>Total Proteins:</strong> {{ total_proteins }}</p>
+            <p><strong>Proteins without EC Number:</strong> {{ proteins_without_ec }}</p>
+        </div>
+        <div class="graphs">
+            <div class="graph">
+                <h2>EC Number Frequency Distribution</h2>
+                <canvas id="freqGraph"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Graphique: Distribution des fréquences des EC numbers
+        var ctx = document.getElementById('freqGraph').getContext('2d');
+
+        // Trier les labels par ordre croissant (pour les abscisses)
+        var freqLabels = {{ freq_labels|safe }};
+        var freqCounts = {{ freq_counts|safe }};
+
+        // Trier les données par ordre croissant des labels
+        var sortedIndices = freqLabels
+            .map((value, index) => [value, index]) // Associer les labels aux indices
+            .sort((a, b) => a[0] - b[0]) // Trier par les labels (par ordre croissant)
+            .map((e) => e[1]); // Extraire les indices triés
+
+        var sortedLabels = sortedIndices.map(i => freqLabels[i]);
+        var sortedCounts = sortedIndices.map(i => freqCounts[i]);
+
+        var freqChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: sortedLabels,
+                datasets: [{
+                    label: 'Frequency of EC Numbers',
+                    data: sortedCounts,
+                    backgroundColor: 'rgba(153, 102, 255, 0.5)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        ticks: {
+                            maxRotation: 90,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+            }
+        });
+    </script>
+</body>
+</html>
